@@ -1,36 +1,64 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# GapCloser AI
 
-## Getting Started
+**GapCloser AI** is a Gemini-powered study buddy for **CAI1001C – Artificial Intelligence Thinking**. It turns course topics into explanations, quizzes, flashcards, gap checks, notes, final exam prep, and portfolio artifacts — without sending your API key to the browser.
 
-First, run the development server:
+## Stack
+
+- Next.js App Router (TypeScript)
+- Tailwind CSS
+- `@google/genai` (server-side only)
+- `zod` + `zod-to-json-schema` for structured outputs
+- `localStorage` for lightweight progress
+- Vercel-ready env vars (`GEMINI_API_KEY`, optional `GEMINI_MODEL`)
+
+## Setup
 
 ```bash
+npm install
+cp .env.example .env.local
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Add your Gemini API key to `.env.local` before using AI features.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## MVP features
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- Dashboard with quick actions and local progress hints
+- Topic map + topic detail pages (hardcoded `courseTopics`)
+- **Study Buddy** — Markdown answers via `/api/gemini/study-buddy`; structured **Teach-back** scores via `/api/gemini/teach-back`
+- **Gap Check** — structured feedback via `/api/gemini/gap-check`
+- **Flashcards** — JSON deck + flip UI via `/api/gemini/flashcards`
+- **Quiz** — JSON questions via `/api/gemini/quiz`; UI at `/quiz` (sidebar + topic cards)
+- **Notes Builder** — Markdown notes via `/api/gemini/notes`
+- **Final Exam Prep** — Markdown packet via `/api/gemini/final-exam`
+- **Portfolio Artifacts** — Markdown artifact via `/api/gemini/artifact`
 
-## Learn More
+## Gemini security
 
-To learn more about Next.js, take a look at the following resources:
+- Use **`GEMINI_API_KEY`** in `.env.local` (server only).
+- Do **not** use `NEXT_PUBLIC_GEMINI_API_KEY`.
+- All Gemini calls run in **Route Handlers** under `src/app/api/gemini/*`.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Future features
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- Supabase auth and database
+- Saved notes
+- Saved flashcards
+- Quiz history
+- File upload for syllabus and lecture notes
+- Voice teach-back mode
+- Spaced repetition
+- Final exam simulator
+- Portfolio export to Markdown/PDF
+- Gemini streaming responses
 
-## Deploy on Vercel
+## Docs
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- [MVP QA report](docs/MVP_QA_REPORT.md)
+- [Post-MVP roadmap](docs/ROADMAP.md)
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Scripts
+
+- `npm run dev` — development server
+- `npm run build` — production build
+- `npm run lint` — ESLint
