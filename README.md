@@ -8,8 +8,9 @@
 - Tailwind CSS
 - `@google/genai` (server-side only)
 - `zod` + `zod-to-json-schema` for structured outputs
-- `localStorage` for lightweight progress
-- Vercel-ready env vars (`GEMINI_API_KEY`, optional `GEMINI_MODEL`)
+- `localStorage` for lightweight progress (topic confidence, completed actions)
+- Vercel-ready env vars (`GEMINI_API_KEY`, optional `GEMINI_MODEL`, optional `GEMINI_MOCK`)
+- IndexedDB study ledger (`src/lib/study-ledger.ts`) for quiz/deck snapshots on supporting pages
 
 ## Setup
 
@@ -19,7 +20,9 @@ cp .env.example .env.local
 npm run dev
 ```
 
-Add your Gemini API key to `.env.local` before using AI features.
+Edit `.env.local`: set a real `GEMINI_API_KEY` for live Gemini, **or** set `GEMINI_MOCK=true` to exercise the UI with server-side stub responses (no key required).
+
+The template value `replace_with_your_gemini_api_key` is **not** accepted as a real key (real mode only).
 
 ## MVP features
 
@@ -56,9 +59,14 @@ Add your Gemini API key to `.env.local` before using AI features.
 
 - [MVP QA report](docs/MVP_QA_REPORT.md)
 - [Post-MVP roadmap](docs/ROADMAP.md)
+- [Stability report](docs/STABILITY_REPORT.md)
 
 ## Scripts
 
 - `npm run dev` — development server
 - `npm run build` — production build
 - `npm run lint` — ESLint
+- `npm run typecheck` — TypeScript (`tsc --noEmit`)
+- `npm run test` — Vitest unit tests
+
+CI (see `.github/workflows/ci.yml`): `npm ci`, lint, typecheck, test, build on Node 22.
