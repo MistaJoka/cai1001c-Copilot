@@ -11,11 +11,6 @@ type Props = {
 
 const DEFAULT_MIN = 10;
 
-/**
- * Open reflection gate — correctness is length-only for MVP reliability.
- *
- * TODO(Gemini): optional empathic tutor reply surfaced after learner commits sentence.
- */
 export function ReflectionCheck({ step, onGateChange }: Props) {
   const min = typeof step.minChars === "number" ? step.minChars : DEFAULT_MIN;
 
@@ -34,13 +29,8 @@ export function ReflectionCheck({ step, onGateChange }: Props) {
   }, [step.id, onGateChange]);
 
   useEffect(() => {
-    if (step.requireCorrect) {
-      onGateChange?.(okLength);
-      return;
-    }
-    /* Exploratory lesson: typing enough still unlocks continuity */
     onGateChange?.(okLength);
-  }, [okLength, step.requireCorrect, onGateChange]);
+  }, [okLength, onGateChange]);
 
   return (
     <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-4 sm:p-5">

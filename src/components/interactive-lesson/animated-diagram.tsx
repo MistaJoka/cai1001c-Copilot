@@ -33,11 +33,6 @@ const connector = {
   visible: { opacity: 1, scale: 1, transition: { duration: 0.18 } },
 };
 
-/**
- * Lightweight flow strip — geometric nodes + connectors, SVG kept minimal.
- *
- * TODO(Gemini): generate diagram node labels from syllabus bullets (structured JSON validated).
- */
 export function AnimatedDiagram({ step, onGateChange }: Props) {
   useEffect(() => {
     onGateChange?.(true);

@@ -11,11 +11,6 @@ type Props = {
   onResult?: (correct: boolean) => void;
 };
 
-/**
- * Discrete slider quiz. Values animate lightly on change; heavy easing avoided for perf.
- *
- * TODO(Gemini): inline micro-explanation when learner checks (“why 7 beats 3…”).
- */
 export function SliderSimulation({ step, onGateChange, onResult }: Props) {
   const stepSz = typeof step.step === "number" && step.step > 0 ? step.step : 1;
   const tol = typeof step.tolerance === "number" ? step.tolerance : 0;

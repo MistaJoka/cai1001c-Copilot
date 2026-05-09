@@ -4,23 +4,22 @@ import { useEffect, useState } from "react";
 import { courseTopics } from "@/data/courseTopics";
 import { PageHeader } from "@/components/page-header";
 import { ResponsePanel } from "@/components/response-panel";
-import { MarkdownContent } from "@/components/markdown-content";
 import { buildFinalExamPrep } from "@/lib/api-client";
 import { getProgress } from "@/lib/local-progress";
 
 export default function FinalExamPage() {
   const [selected, setSelected] = useState<string[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [out, setOut] = useState<string | null>(null);
 
   useEffect(() => {
     const p = getProgress();
     const weak = courseTopics
-      .filter((t) => !p[t.id] || p[t.id].confidence !== "high")
+      .filter((t) => p[t.id]?.confidence !== "high")
       .map((t) => t.id);
     setSelected(weak);
   }, []);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [out, setOut] = useState<string | null>(null);
 
   function toggle(id: string) {
     setSelected((s) =>
@@ -86,10 +85,9 @@ export default function FinalExamPage() {
         <ResponsePanel
           loading={loading}
           error={error}
+          markdown={out}
           emptyMessage="Prep packet shows here."
-        >
-          {out ? <MarkdownContent content={out} /> : null}
-        </ResponsePanel>
+        />
       </div>
     </>
   );

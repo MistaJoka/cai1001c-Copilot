@@ -14,31 +14,21 @@ import { LessonHintPanel } from "@/components/interactive-lesson/lesson-hint-pan
 
 type Props = {
   lesson: InteractiveLessonDocument;
-  /** Summary rows for dashboards / Gemini fine-tuning hooks */
-  onComplete?: (results: StepResultPayload[]) => void;
   /**
-   * Mirrors `prefers-reduced-motion` when passed from parent (e.g. `useReducedMotion()`).
-   * Shortens lateral step transitions beyond Framer Motion’s built-in preference.
+   * Mirrors `prefers-reduced-motion` when passed from parent. Shortens lateral step
+   * transitions beyond Framer Motion's built-in preference.
    */
   reduceMotionHints?: boolean;
 };
 
-/**
- * Orchestrates JSON-backed lessons across every `LessonStep` type.
- * Motion inherits `MotionShell` → honors `prefers-reduced-motion` via Framer Motion.
- *
- * Optional per-step `teaching` / `coachClose` carry pacing without changing widget internals.
- */
 export function InteractiveLesson({
   lesson,
-  onComplete,
   reduceMotionHints = false,
 }: Props) {
   const steps = lesson.steps;
   const [index, setIndex] = useState(0);
   const [advance, setAdvance] = useState(false);
   const [finished, setFinished] = useState(false);
-  const [, setResults] = useState<StepResultPayload[]>([]);
   const outcomesRef = useRef<StepResultPayload[]>([]);
 
   useLayoutEffect(() => {
@@ -50,19 +40,14 @@ export function InteractiveLesson({
   }, [steps.length]);
 
   const recordOutcome = useCallback((stepId: string, correct?: boolean) => {
-    setResults((prev) => {
-      const trimmed = prev.filter((r) => r.stepId !== stepId);
-      const next = [...trimmed, { stepId, correct }];
-      outcomesRef.current = next;
-      return next;
-    });
+    const trimmed = outcomesRef.current.filter((r) => r.stepId !== stepId);
+    outcomesRef.current = [...trimmed, { stepId, correct }];
   }, []);
 
   const restart = () => {
     setIndex(0);
     setAdvance(false);
     setFinished(false);
-    setResults([]);
     outcomesRef.current = [];
   };
 
@@ -167,13 +152,11 @@ export function InteractiveLesson({
           canAdvance={advance}
           onBack={() => setIndex((i) => Math.max(0, i - 1))}
           onNext={() => {
-            const isLast = index >= steps.length - 1;
-            if (!isLast) {
-              setIndex((i) => i + 1);
+            if (index >= steps.length - 1) {
+              setFinished(true);
               return;
             }
-            onComplete?.([...outcomesRef.current]);
-            setFinished(true);
+            setIndex((i) => i + 1);
           }}
         />
 

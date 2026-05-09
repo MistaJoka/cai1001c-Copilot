@@ -8,21 +8,13 @@ import { fetchLessonHint } from "@/lib/api-client";
 type Props = {
   lessonId: string;
   step: LessonStep;
-  onDraftForNote?: () => string | undefined;
 };
 
 function stepToJson(step: LessonStep): Record<string, unknown> {
   return JSON.parse(JSON.stringify(step)) as Record<string, unknown>;
 }
 
-/**
- * Optional Gemini hint — keeps API key server-side via `/api/gemini/lesson-hint`.
- */
-export function LessonHintPanel({
-  lessonId,
-  step,
-  onDraftForNote,
-}: Props) {
+export function LessonHintPanel({ lessonId, step }: Props) {
   const [hint, setHint] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -31,13 +23,11 @@ export function LessonHintPanel({
     setError(null);
     setLoading(true);
     try {
-      const learnerNote = onDraftForNote?.()?.trim();
       const { hint: h } = await fetchLessonHint({
         lessonId,
         stepId: step.id,
         stepType: step.type,
         step: stepToJson(step),
-        learnerNote: learnerNote || undefined,
       });
       setHint(h.trim());
     } catch (e) {

@@ -83,7 +83,6 @@ export async function fetchLessonHint(input: {
   stepId: string;
   stepType: string;
   step: Record<string, unknown>;
-  learnerNote?: string;
 }): Promise<{ hint: string }> {
   return postJson("/api/gemini/lesson-hint", input);
 }

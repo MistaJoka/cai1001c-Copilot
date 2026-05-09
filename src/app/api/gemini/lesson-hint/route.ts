@@ -1,66 +1,55 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { generateText } from "@/lib/gemini";
-import { logRouteError, publicErrorFromCaught } from "@/lib/api-route-error";
-import { readJsonBody } from "@/lib/request-json";
+import { withGeminiRoute } from "@/lib/api-route";
 import { buildLessonHintPrompt } from "@/lib/prompts/lessonHint";
 import {
   LIMIT_LESSON_STEP_JSON,
   LIMIT_LESSON_STRING_ID,
-  rejectIfTooLong,
 } from "@/lib/gemini-body-limits";
 
-const bodySchema = z.object({
+const Body = z.object({
   lessonId: z.string().min(1).max(LIMIT_LESSON_STRING_ID),
   stepId: z.string().min(1).max(LIMIT_LESSON_STRING_ID),
   stepType: z.string().min(1).max(LIMIT_LESSON_STRING_ID),
-  /** Serialized lesson step JSON from the client */
   step: z.unknown().optional(),
-  learnerNote: z.string().max(2000).optional(),
 });
 
-export async function POST(req: Request) {
-  const json = await readJsonBody(req);
-  if (!json.ok) return json.response;
+export const POST = withGeminiRoute(
+  "lesson-hint",
+  "Could not fetch a hint right now. Try again shortly.",
+  async (raw) => {
+    const body = Body.parse(raw);
 
-  try {
-    const parsed = bodySchema.parse(json.data);
     let stepSummary = "(no step payload)";
-    if (parsed.step !== undefined) {
+    if (body.step !== undefined) {
       let serialized: string;
       try {
-        serialized = JSON.stringify(parsed.step);
+        serialized = JSON.stringify(body.step);
       } catch {
         return NextResponse.json(
           { error: "step could not be serialized." },
           { status: 400 },
         );
       }
-      const tooStep = rejectIfTooLong(
-        serialized,
-        LIMIT_LESSON_STEP_JSON,
-        "step",
-      );
-      if (tooStep) return tooStep;
+      if (serialized.length > LIMIT_LESSON_STEP_JSON) {
+        return NextResponse.json(
+          {
+            error: `step is too long (max ${LIMIT_LESSON_STEP_JSON} characters).`,
+          },
+          { status: 413 },
+        );
+      }
       stepSummary = serialized.slice(0, 8000);
     }
 
     const prompt = buildLessonHintPrompt({
-      lessonId: parsed.lessonId,
-      stepId: parsed.stepId,
-      stepType: parsed.stepType,
+      lessonId: body.lessonId,
+      stepId: body.stepId,
+      stepType: body.stepType,
       stepSummary,
-      learnerNote: parsed.learnerNote,
     });
-
     const output = await generateText(prompt);
     return NextResponse.json({ hint: output });
-  } catch (err) {
-    logRouteError("lesson-hint", err);
-    const { message, status } = publicErrorFromCaught(
-      err,
-      "Could not fetch a hint right now. Try again shortly.",
-    );
-    return NextResponse.json({ error: message }, { status });
-  }
-}
+  },
+);

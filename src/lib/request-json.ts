@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
 
-export type RequestJsonResult =
+type Result =
   | { ok: true; data: unknown }
   | { ok: false; response: NextResponse };
 
-export async function readJsonBody(req: Request): Promise<RequestJsonResult> {
+export async function readJsonBody(req: Request): Promise<Result> {
   try {
     const data: unknown = await req.json();
     return { ok: true, data };

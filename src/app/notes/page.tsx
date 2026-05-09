@@ -1,9 +1,9 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { PageHeader } from "@/components/page-header";
 import { ResponsePanel } from "@/components/response-panel";
-import { MarkdownContent } from "@/components/markdown-content";
 import { buildNotes } from "@/lib/api-client";
 
 export default function NotesPage() {
@@ -36,17 +36,27 @@ export default function NotesPage() {
         title="Notes Builder"
         description="Paste raw course content. Gemini returns structured study notes in Markdown."
       />
-      <div className="grid gap-4 lg:grid-cols-2">
-        <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-5">
+      <p className="mb-6 text-sm text-zinc-400">
+        Prefer typing your own notebook with copilot actions? Open the{" "}
+        <Link
+          href="/notes/copilot"
+          className="rounded-sm font-medium text-cyan-400 hover:text-cyan-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-400/70"
+        >
+          Notebook + AI copilot
+        </Link>{" "}
+        layout — this paste-to-notes flow stays unchanged here.
+      </p>
+      <div className="grid min-w-0 gap-6 lg:grid-cols-2 lg:gap-8">
+        <div className="rounded-2xl border border-zinc-800/90 bg-zinc-900/40 p-5 shadow-[0_0_0_1px_rgba(24,24,27,0.35)] sm:p-6">
           <textarea
-            className="min-h-80 w-full rounded-xl border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100"
+            className="min-h-[min(22rem,50dvh)] w-full rounded-xl border border-zinc-800/90 bg-zinc-950 px-4 py-3 text-sm leading-relaxed text-zinc-100 placeholder:text-zinc-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-400/70"
             value={source}
             onChange={(e) => setSource(e.target.value)}
             placeholder="Paste slides, reading notes, or lecture transcript…"
           />
           <button
             type="button"
-            className="mt-4 rounded-xl bg-cyan-600 px-4 py-2 text-sm font-medium text-white hover:bg-cyan-500"
+            className="mt-5 inline-flex min-h-11 items-center justify-center rounded-xl bg-cyan-600 px-6 py-3 text-sm font-semibold text-white hover:bg-cyan-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-300 disabled:opacity-50"
             onClick={run}
             disabled={loading}
           >
@@ -56,10 +66,9 @@ export default function NotesPage() {
         <ResponsePanel
           loading={loading}
           error={error}
+          markdown={out}
           emptyMessage="Notes render here."
-        >
-          {out ? <MarkdownContent content={out} /> : null}
-        </ResponsePanel>
+        />
       </div>
     </>
   );

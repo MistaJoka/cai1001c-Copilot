@@ -6,10 +6,13 @@ import { useSearchParams } from "next/navigation";
 import { courseTopics } from "@/data/courseTopics";
 import { PageHeader } from "@/components/page-header";
 import { ProgressRing } from "@/components/progress-ring";
-import { ResponsePanel } from "@/components/response-panel";
 import { QuizCard } from "@/components/quiz-card";
 import { Flashcard } from "@/components/flashcard";
 import { QuizScoreLogger } from "@/components/quiz-score-logger";
+import {
+  GAP_STUDENT_PROMPT,
+  GapResultSection,
+} from "@/components/gap-result-section";
 import {
   generateFlashcards,
   generateQuiz,
@@ -27,17 +30,16 @@ import type { FlashcardsResponse } from "@/lib/schemas/flashcards";
 import type { GapCheckResponse } from "@/lib/schemas/gapCheck";
 import type { QuizResponse } from "@/lib/schemas/quiz";
 
-const GAP_PROMPT = `Explain what you know about this topic.
-Give:
-1. Definition
-2. Example
-3. Why it matters
-4. Common mistake`;
-
 type Phase = "pick" | "gap" | "gap_review" | "quiz" | "flashcards" | "done";
 
 const DEFAULT_GAP_SEED =
   "• Definition: …\n• Example: …\n• Why it matters: …\n• Common mistake: …\n(Replace bullets with your own words.)";
+
+function newRunId(): string {
+  return typeof crypto !== "undefined" && crypto.randomUUID
+    ? crypto.randomUUID()
+    : `run-${Date.now()}`;
+}
 
 export default function StudyRunPage() {
   return (
@@ -51,11 +53,7 @@ function StudyRunInner() {
   const search = useSearchParams();
   const [topicId, setTopicId] = useState("");
   const [phase, setPhase] = useState<Phase>("pick");
-  const runIdRef = useRef(
-    typeof crypto !== "undefined" && crypto.randomUUID
-      ? crypto.randomUUID()
-      : `run-${Date.now()}`,
-  );
+  const runIdRef = useRef(newRunId());
   const startedAtRef = useRef("");
   const stepsRef = useRef<StudyRunStepRecord[]>([]);
 
@@ -133,7 +131,7 @@ function StudyRunInner() {
     setError(null);
     setGapResult(null);
     try {
-      const payload = `${GAP_PROMPT}\n\n${gapAnswer.trim()}`;
+      const payload = `${GAP_STUDENT_PROMPT}\n\n${gapAnswer.trim()}`;
       const data = await runGapCheck({
         topic: topicId,
         studentAnswers: payload,
@@ -289,18 +287,31 @@ function StudyRunInner() {
             </Link>
           </p>
 
-          <ResponsePanel
-            loading={loading}
-            error={error}
-            emptyMessage=""
-          />
+          {loading ? (
+            <div
+              className="mb-6 rounded-2xl border border-zinc-800 bg-zinc-900/40 p-5 shadow-sm"
+              role="status"
+              aria-live="polite"
+            >
+              <p className="text-sm text-zinc-400">Thinking with Gemini…</p>
+            </div>
+          ) : null}
+
+          {error ? (
+            <div
+              className="mb-6 rounded-2xl border border-rose-500/30 bg-rose-950/20 p-5 text-sm text-rose-200"
+              role="alert"
+            >
+              {error}
+            </div>
+          ) : null}
 
           {phase === "gap" ? (
             <div className="grid gap-6 lg:grid-cols-2">
               <div className="space-y-4 rounded-2xl border border-zinc-800 bg-zinc-900/40 p-5">
                 <div className="rounded-xl border border-zinc-800 bg-zinc-950/40 p-3 text-xs text-zinc-400">
                   <p className="font-medium text-zinc-300">Respond to</p>
-                  <pre className="mt-2 whitespace-pre-wrap font-sans">{GAP_PROMPT}</pre>
+                  <pre className="mt-2 whitespace-pre-wrap font-sans">{GAP_STUDENT_PROMPT}</pre>
                 </div>
                 <textarea
                   className="min-h-44 w-full rounded-xl border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100"
@@ -347,9 +358,9 @@ function StudyRunInner() {
                   <p className="text-sm text-zinc-500">{gapResult.topic}</p>
                 </div>
               </div>
-              <RunSection title="Strengths" items={gapResult.strengths} />
-              <RunSection title="Gaps" items={gapResult.gaps} tone="rose" />
-              <RunSection title="Misconceptions" items={gapResult.misconceptions} tone="amber" />
+              <GapResultSection title="Strengths" items={gapResult.strengths} />
+              <GapResultSection title="Gaps" items={gapResult.gaps} tone="rose" />
+              <GapResultSection title="Misconceptions" items={gapResult.misconceptions} tone="amber" />
               <div>
                 <p className="text-xs font-semibold uppercase text-zinc-500">Repair lesson</p>
                 <p className="mt-2 text-sm text-zinc-300">{gapResult.repairLesson}</p>
@@ -438,34 +449,5 @@ function StudyRunInner() {
         </>
       ) : null}
     </>
-  );
-}
-
-function RunSection({
-  title,
-  items,
-  tone,
-}: {
-  title: string;
-  items: string[];
-  tone?: "rose" | "amber";
-}) {
-  const border =
-    tone === "rose"
-      ? "border-rose-500/25"
-      : tone === "amber"
-        ? "border-amber-500/25"
-        : "border-zinc-800";
-  return (
-    <div className={`rounded-xl border ${border} bg-zinc-950/50 p-3`}>
-      <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
-        {title}
-      </p>
-      <ul className="mt-2 list-disc space-y-1 pl-4 text-sm text-zinc-300">
-        {items.map((x, i) => (
-          <li key={`${title}-${i}`}>{x}</li>
-        ))}
-      </ul>
-    </div>
   );
 }

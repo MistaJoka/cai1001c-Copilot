@@ -164,7 +164,6 @@ export function DragSort({ step, onGateChange, onResult }: Props) {
       {step.instructions ? (
         <p className="text-sm text-zinc-300">{step.instructions}</p>
       ) : null}
-      {/* TODO(Gemini): dynamic instructions from lesson context */}
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}

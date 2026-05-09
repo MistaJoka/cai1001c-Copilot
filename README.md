@@ -1,16 +1,16 @@
 # GapCloser AI
 
-**GapCloser AI** is a Gemini-powered study buddy for **CAI1001C – Artificial Intelligence Thinking**. It turns course topics into explanations, quizzes, flashcards, gap checks, notes, final exam prep, and portfolio artifacts — without sending your API key to the browser.
+**GapCloser AI** is a Gemini-powered study buddy for **CAI1001C – Artificial Intelligence Thinking**. It turns course topics into explanations, quizzes, flashcards, gap checks, notes, final-exam prep, and portfolio artifacts — without sending your API key to the browser.
 
 ## Stack
 
-- Next.js App Router (TypeScript)
-- Tailwind CSS
+- Next.js 16 App Router (TypeScript)
+- Tailwind CSS v4
 - `@google/genai` (server-side only)
 - `zod` + `zod-to-json-schema` for structured outputs
+- Framer Motion + dnd-kit for the interactive lesson engine
 - `localStorage` for lightweight progress (topic confidence, completed actions)
-- Vercel-ready env vars (`GEMINI_API_KEY`, optional `GEMINI_MODEL`, optional `GEMINI_MOCK`)
-- IndexedDB study ledger (`src/lib/study-ledger.ts`) for quiz/deck snapshots on supporting pages
+- IndexedDB study ledger (`src/lib/study-ledger.ts`) for quiz/deck/run snapshots
 
 ## Setup
 
@@ -22,19 +22,27 @@ npm run dev
 
 Edit `.env.local`: set a real `GEMINI_API_KEY` for live Gemini, **or** set `GEMINI_MOCK=true` to exercise the UI with server-side stub responses (no key required).
 
-The template value `replace_with_your_gemini_api_key` is **not** accepted as a real key (real mode only).
+The template value `replace_with_your_gemini_api_key` is **not** accepted as a real key.
 
-## MVP features
+## Routes
 
-- Dashboard with quick actions and local progress hints
-- Topic map + topic detail pages (hardcoded `courseTopics`)
-- **Study Buddy** — Markdown answers via `/api/gemini/study-buddy`; structured **Teach-back** scores via `/api/gemini/teach-back`
-- **Gap Check** — structured feedback via `/api/gemini/gap-check`
-- **Flashcards** — JSON deck + flip UI via `/api/gemini/flashcards`
-- **Quiz** — JSON questions via `/api/gemini/quiz`; UI at `/quiz` (sidebar + topic cards)
-- **Notes Builder** — Markdown notes via `/api/gemini/notes`
-- **Final Exam Prep** — Markdown packet via `/api/gemini/final-exam`
-- **Portfolio Artifacts** — Markdown artifact via `/api/gemini/artifact`
+App pages:
+
+- `/` — dashboard
+- `/topics`, `/topics/[topicId]` — topic map + detail
+- `/study-buddy` — Markdown chat / structured **Teach-back**
+- `/gap-check` — explain-first, structured feedback
+- `/flashcards`, `/quiz`, `/notes`, `/final-exam`, `/artifacts` — single-purpose tools
+- `/study-run` — guided gap → quiz → flashcards loop, persisted to the IndexedDB ledger
+- `/insights` — read-only ledger view
+- `/interactive-demo` — JSON-driven lesson engine (themed lesson + all-types lab)
+
+API routes (all `POST`, all under `/api/gemini/`):
+
+- Markdown/text: `study-buddy`, `notes`, `final-exam`, `artifact`, `lesson-hint`
+- Structured JSON (Zod-validated): `quiz`, `flashcards`, `gap-check`, `teach-back`
+
+All routes share the `withGeminiRoute` envelope in `src/lib/api-route.ts`.
 
 ## Gemini security
 
@@ -45,21 +53,16 @@ The template value `replace_with_your_gemini_api_key` is **not** accepted as a r
 ## Future features
 
 - Supabase auth and database
-- Saved notes
-- Saved flashcards
-- Quiz history
-- File upload for syllabus and lecture notes
-- Voice teach-back mode
-- Spaced repetition
-- Final exam simulator
+- Saved notes, saved flashcards, quiz history
+- Syllabus / lecture file upload
+- Voice teach-back, spaced repetition, final-exam simulator
 - Portfolio export to Markdown/PDF
 - Gemini streaming responses
 
 ## Docs
 
-- [MVP QA report](docs/MVP_QA_REPORT.md)
-- [Post-MVP roadmap](docs/ROADMAP.md)
 - [Stability report](docs/STABILITY_REPORT.md)
+- [Post-MVP roadmap](docs/ROADMAP.md)
 
 ## Scripts
 
@@ -69,4 +72,4 @@ The template value `replace_with_your_gemini_api_key` is **not** accepted as a r
 - `npm run typecheck` — TypeScript (`tsc --noEmit`)
 - `npm run test` — Vitest unit tests
 
-CI (see `.github/workflows/ci.yml`): `npm ci`, lint, typecheck, test, build on Node 22.
+CI (`.github/workflows/ci.yml`): `npm ci`, lint, typecheck, test, build on Node 22.

@@ -4,7 +4,6 @@ type Props = {
   label?: string;
 };
 
-/** Simple ring: value/max as fill percentage */
 export function ProgressRing({ value, max = 100, label }: Props) {
   const pct = Math.min(100, Math.max(0, (value / max) * 100));
   const deg = (pct / 100) * 360;

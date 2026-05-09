@@ -62,7 +62,12 @@ function QuizInner() {
     setPack(null);
     try {
       setLastStudiedTopic(topicId);
-      const data = await generateQuiz({ topic: topicId, count: 8 });
+      const raw = search.get("count");
+      const parsed = raw ? Number.parseInt(raw, 10) : NaN;
+      const count = Number.isFinite(parsed)
+        ? Math.min(20, Math.max(1, parsed))
+        : 8;
+      const data = await generateQuiz({ topic: topicId, count });
       setPack(data);
       markActionComplete(topicId, "quiz");
     } catch (e) {
@@ -70,7 +75,7 @@ function QuizInner() {
     } finally {
       setLoading(false);
     }
-  }, [topicId]);
+  }, [topicId, search]);
 
   return (
     <>

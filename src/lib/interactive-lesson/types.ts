@@ -1,22 +1,11 @@
-/**
- * JSON-driven lesson step union. Serialized lessons can live in CMS/DB later.
- *
- * TODO(Gemini): `POST /api/gemini/interactive-lesson` — generate whole-lesson JSON + zod validation;
- * per-step hints use `POST /api/gemini/lesson-hint` (see client `LessonHintPanel`).
- */
 export type StepBase = {
   id: string;
-  /** Block “Next” until learner satisfies validation inside the step UI */
+  /** Block "Next" until learner satisfies validation inside the step UI. */
   requireCorrect?: boolean;
-  /** Short step label (micro-headline) */
   headline?: string;
-  /**
-   * One teaching beat before the interaction — pacing: explain one idea, then ask one thing.
-   */
+  /** One teaching beat shown before the interaction. */
   teaching?: string;
-  /**
-   * Optional reinforcement after the widget (still on the same screen).
-   */
+  /** Optional reinforcement after the widget (still on the same screen). */
   coachClose?: string;
 };
 
@@ -30,7 +19,7 @@ export type MultipleChoiceStep = StepBase & {
   type: "multiple-choice";
   question: string;
   options: { id: string; label: string }[];
-  /** Single-select when length === 1 */
+  /** Single-select when length === 1. */
   correctOptionIds: string[];
 };
 
@@ -56,7 +45,7 @@ export type SliderSimStep = StepBase & {
   max: number;
   step?: number;
   defaultValue?: number;
-  /** When learner value is within ±tolerance of target, mark correct */
+  /** Learner value is correct when within ±tolerance of target. */
   targetValue: number;
   tolerance?: number;
   unit?: string;
@@ -82,9 +71,8 @@ export type MiniSimulationStep = StepBase & {
   type: "mini-simulation";
   title: string;
   description?: string;
-  /** Simple “sandbox”: discrete choices change a visual state */
   choices: { id: string; label: string }[];
-  /** First matching choice id is highlighted as illustrative outcome */
+  /** First matching choice id is highlighted as illustrative outcome. */
   recommendedChoiceId?: string;
 };
 

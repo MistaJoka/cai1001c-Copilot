@@ -11,21 +11,15 @@ import { ReflectionCheck } from "@/components/interactive-lesson/reflection-chec
 import { SliderSimulation } from "@/components/interactive-lesson/slider-simulation";
 import { TapRevealCard } from "@/components/interactive-lesson/tap-reveal-card";
 
-export type StepRendererProps = {
+type Props = {
   step: LessonStep;
-  /** When true the learner may advance to the next step (see each step widget). */
+  /** When true the learner may advance to the next step. */
   onGateChange: (allowed: boolean) => void;
-  /** Structured outcome for quizzes / Gemini analytics (optional correctness). */
+  /** Structured outcome for quizzes / analytics (optional correctness). */
   onOutcome?: (stepId: string, correct?: boolean) => void;
 };
 
-/**
- * Dispatches lesson JSON (`type`) to concrete widgets.
- *
- * TODO(Gemini): optional `lessonStep.help` overlays — hydrate from `/api/gemini/...`
- * responses validated against a sibling zod schema (keep API key server-side).
- */
-export function StepRenderer({ step, onGateChange, onOutcome }: StepRendererProps) {
+export function StepRenderer({ step, onGateChange, onOutcome }: Props) {
   switch (step.type) {
     case "tap-reveal":
       return <TapRevealCard step={step} onGateChange={onGateChange} />;

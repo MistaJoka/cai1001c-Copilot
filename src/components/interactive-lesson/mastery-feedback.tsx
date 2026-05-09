@@ -4,14 +4,10 @@ import { AnimatePresence, motion } from "framer-motion";
 import type { ReactNode } from "react";
 
 type Props = {
-  /** null = hide */
   state: "correct" | "incorrect" | null;
   children?: ReactNode;
 };
 
-/**
- * Brief correctness / celebration cue — keep subtle per reduced-motion prefs.
- */
 export function MasteryFeedback({ state, children }: Props) {
   return (
     <AnimatePresence>

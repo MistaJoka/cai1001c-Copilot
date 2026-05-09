@@ -6,16 +6,13 @@ import { courseTopics } from "@/data/courseTopics";
 import { PageHeader } from "@/components/page-header";
 import { ResponsePanel } from "@/components/response-panel";
 import { ProgressRing } from "@/components/progress-ring";
+import {
+  GAP_STUDENT_PROMPT,
+  GapResultSection,
+} from "@/components/gap-result-section";
 import { runGapCheck } from "@/lib/api-client";
 import { markActionComplete, setLastStudiedTopic } from "@/lib/local-progress";
 import type { GapCheckResponse } from "@/lib/schemas/gapCheck";
-
-const PROMPT = `Explain what you know about this topic.
-Give:
-1. Definition
-2. Example
-3. Why it matters
-4. Common mistake`;
 
 export default function GapCheckPage() {
   return (
@@ -54,7 +51,7 @@ function GapCheckInner() {
     setResult(null);
     try {
       setLastStudiedTopic(topicId);
-      const payload = `${PROMPT}\n\n${answer.trim()}`;
+      const payload = `${GAP_STUDENT_PROMPT}\n\n${answer.trim()}`;
       const data = await runGapCheck({ topic: topicId, studentAnswers: payload });
       setResult(data);
       markActionComplete(topicId, "gap-check");
@@ -93,7 +90,7 @@ function GapCheckInner() {
           <div className="rounded-xl border border-zinc-800 bg-zinc-950/50 p-3 text-xs text-zinc-400">
             <p className="font-medium text-zinc-300">Prompt to answer</p>
             <pre className="mt-2 whitespace-pre-wrap font-sans text-zinc-400">
-              {PROMPT}
+              {GAP_STUDENT_PROMPT}
             </pre>
           </div>
 
@@ -129,49 +126,22 @@ function GapCheckInner() {
                     <p className="text-zinc-500">{result.topic}</p>
                   </div>
                 </div>
-                <Section title="Strengths" items={result.strengths} />
-                <Section title="Gaps" items={result.gaps} tone="rose" />
-                <Section title="Misconceptions" items={result.misconceptions} tone="amber" />
+                <GapResultSection title="Strengths" items={result.strengths} />
+                <GapResultSection title="Gaps" items={result.gaps} tone="rose" />
+                <GapResultSection title="Misconceptions" items={result.misconceptions} tone="amber" />
                 <div>
                   <h3 className="text-xs font-semibold uppercase text-zinc-500">
                     Repair lesson
                   </h3>
                   <p className="mt-1 text-zinc-300">{result.repairLesson}</p>
                 </div>
-                <Section title="Next actions" items={result.nextStudyActions} />
-                <Section title="Follow-up questions" items={result.followUpQuestions} />
+                <GapResultSection title="Next actions" items={result.nextStudyActions} />
+                <GapResultSection title="Follow-up questions" items={result.followUpQuestions} />
               </div>
             ) : null}
           </ResponsePanel>
         </div>
       </div>
     </>
-  );
-}
-
-function Section({
-  title,
-  items,
-  tone,
-}: {
-  title: string;
-  items: string[];
-  tone?: "rose" | "amber";
-}) {
-  const border =
-    tone === "rose"
-      ? "border-rose-500/20"
-      : tone === "amber"
-        ? "border-amber-500/20"
-        : "border-zinc-800";
-  return (
-    <div className={`rounded-xl border ${border} bg-zinc-950/40 p-3`}>
-      <h3 className="text-xs font-semibold uppercase text-zinc-500">{title}</h3>
-      <ul className="mt-2 list-disc space-y-1 pl-4 text-zinc-300">
-        {items.map((x, i) => (
-          <li key={i}>{x}</li>
-        ))}
-      </ul>
-    </div>
   );
 }

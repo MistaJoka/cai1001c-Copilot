@@ -18,11 +18,4 @@ export type StudyProgress = {
   updatedAt: string;
 };
 
-export type ChatMessage = {
-  id: string;
-  role: "user" | "assistant";
-  content: string;
-  createdAt: string;
-};
-
 export type ProgressMap = Record<string, StudyProgress>;

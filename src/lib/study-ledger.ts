@@ -1,12 +1,10 @@
 "use client";
 
+import { readLastTopicId, readProgressMap } from "@/lib/storage-keys";
 import type { ProgressMap } from "@/types";
 
 const DB_NAME = "gapcloser-ledger-v1";
 const DB_VERSION = 1;
-
-const PROGRESS_STORAGE_KEY = "gapcloser-progress-v1";
-const LAST_TOPIC_STORAGE_KEY = "gapcloser-last-topic-v1";
 
 export const GAPCLOSER_LEDGER_EVENT = "gapcloser-ledger-changed";
 
@@ -57,6 +55,8 @@ export type LedgerExportV1 = {
   };
 };
 
+type StoreName = "quizAttempts" | "deckSnapshots" | "studyRuns";
+
 function hasIndexedDb(): boolean {
   return typeof indexedDB !== "undefined";
 }
@@ -64,6 +64,13 @@ function hasIndexedDb(): boolean {
 function dispatchLedgerChanged() {
   if (typeof window === "undefined") return;
   window.dispatchEvent(new Event(GAPCLOSER_LEDGER_EVENT));
+}
+
+function newRowId(prefix: string): string {
+  if (typeof crypto !== "undefined" && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
 function openDb(): Promise<IDBDatabase> {
@@ -76,177 +83,141 @@ function openDb(): Promise<IDBDatabase> {
     req.onsuccess = () => resolve(req.result);
     req.onupgradeneeded = () => {
       const db = req.result;
-      if (!db.objectStoreNames.contains("quizAttempts")) {
-        const q = db.createObjectStore("quizAttempts", { keyPath: "id" });
-        q.createIndex("byTopic", "topicId");
-        q.createIndex("byCreated", "createdAt");
-      }
-      if (!db.objectStoreNames.contains("deckSnapshots")) {
-        const d = db.createObjectStore("deckSnapshots", { keyPath: "id" });
-        d.createIndex("byTopic", "topicId");
-        d.createIndex("byCreated", "createdAt");
-      }
-      if (!db.objectStoreNames.contains("studyRuns")) {
-        const r = db.createObjectStore("studyRuns", { keyPath: "id" });
-        r.createIndex("byTopic", "topicId");
-        r.createIndex("byStarted", "startedAt");
-      }
+      const ensure = (
+        name: StoreName,
+        indexes: ReadonlyArray<{ name: string; keyPath: string }>,
+      ) => {
+        if (db.objectStoreNames.contains(name)) return;
+        const store = db.createObjectStore(name, { keyPath: "id" });
+        for (const ix of indexes) store.createIndex(ix.name, ix.keyPath);
+      };
+      ensure("quizAttempts", [
+        { name: "byTopic", keyPath: "topicId" },
+        { name: "byCreated", keyPath: "createdAt" },
+      ]);
+      ensure("deckSnapshots", [
+        { name: "byTopic", keyPath: "topicId" },
+        { name: "byCreated", keyPath: "createdAt" },
+      ]);
+      ensure("studyRuns", [
+        { name: "byTopic", keyPath: "topicId" },
+        { name: "byStarted", keyPath: "startedAt" },
+      ]);
     };
   });
+}
+
+async function withStore<T>(
+  name: StoreName,
+  mode: IDBTransactionMode,
+  fn: (store: IDBObjectStore) => Promise<T> | T,
+): Promise<T> {
+  const db = await openDb();
+  const tx = db.transaction(name, mode);
+  const store = tx.objectStore(name);
+  const result = await fn(store);
+  await new Promise<void>((resolve, reject) => {
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+    tx.onabort = () => reject(tx.error);
+  });
+  return result;
+}
+
+async function listAllSorted<T>(
+  name: StoreName,
+  sortKey: keyof T,
+): Promise<T[]> {
+  if (!hasIndexedDb()) return [];
+  return withStore(name, "readonly", (store) =>
+    new Promise<T[]>((resolve, reject) => {
+      const req = store.getAll();
+      req.onsuccess = () => {
+        const rows = (req.result as T[]) ?? [];
+        rows.sort((a, b) =>
+          String(b[sortKey]).localeCompare(String(a[sortKey])),
+        );
+        resolve(rows);
+      };
+      req.onerror = () => reject(req.error);
+    }),
+  );
 }
 
 export async function addQuizAttempt(
   input: Omit<QuizAttemptRecord, "id" | "createdAt">,
 ): Promise<string | null> {
   if (!hasIndexedDb()) return null;
-  const id =
-    typeof crypto !== "undefined" && crypto.randomUUID
-      ? crypto.randomUUID()
-      : `q-${Date.now()}-${Math.random().toString(36).slice(2)}`;
   const row: QuizAttemptRecord = {
     ...input,
-    id,
+    id: newRowId("q"),
     createdAt: new Date().toISOString(),
   };
-  await new Promise<void>((resolve, reject) => {
-    openDb()
-      .then((db) => {
-        const tx = db.transaction("quizAttempts", "readwrite");
-        tx.objectStore("quizAttempts").put(row);
-        tx.oncomplete = () => resolve();
-        tx.onerror = () => reject(tx.error);
-      })
-      .catch(reject);
+  await withStore("quizAttempts", "readwrite", (store) => {
+    store.put(row);
   });
   dispatchLedgerChanged();
-  return id;
+  return row.id;
 }
 
-export async function updateQuizAttemptScore(id: string, scorePercent: number): Promise<void> {
+export async function updateQuizAttemptScore(
+  id: string,
+  scorePercent: number,
+): Promise<void> {
   if (!hasIndexedDb()) return;
   const clamped = Math.max(0, Math.min(100, Math.round(scorePercent)));
-  const db = await openDb();
-  await new Promise<void>((resolve, reject) => {
-    const tx = db.transaction("quizAttempts", "readwrite");
-    const store = tx.objectStore("quizAttempts");
-    const req = store.get(id);
-    req.onsuccess = () => {
-      const prev = req.result as QuizAttemptRecord | undefined;
-      if (!prev) {
+  await withStore("quizAttempts", "readwrite", (store) =>
+    new Promise<void>((resolve, reject) => {
+      const req = store.get(id);
+      req.onsuccess = () => {
+        const prev = req.result as QuizAttemptRecord | undefined;
+        if (!prev) {
+          resolve();
+          return;
+        }
+        store.put({ ...prev, scorePercent: clamped });
         resolve();
-        return;
-      }
-      store.put({ ...prev, scorePercent: clamped });
-    };
-    req.onerror = () => reject(req.error);
-    tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error);
-  });
+      };
+      req.onerror = () => reject(req.error);
+    }),
+  );
   dispatchLedgerChanged();
 }
 
-export async function listQuizAttempts(): Promise<QuizAttemptRecord[]> {
-  if (!hasIndexedDb()) return [];
-  const db = await openDb();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction("quizAttempts", "readonly");
-    const req = tx.objectStore("quizAttempts").getAll();
-    req.onsuccess = () => {
-      const rows = (req.result as QuizAttemptRecord[]) ?? [];
-      rows.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
-      resolve(rows);
-    };
-    req.onerror = () => reject(req.error);
-  });
+export function listQuizAttempts(): Promise<QuizAttemptRecord[]> {
+  return listAllSorted<QuizAttemptRecord>("quizAttempts", "createdAt");
 }
 
 export async function addDeckSnapshot(
   input: Omit<DeckSnapshotRecord, "id" | "createdAt">,
 ): Promise<string | null> {
   if (!hasIndexedDb()) return null;
-  const id =
-    typeof crypto !== "undefined" && crypto.randomUUID
-      ? crypto.randomUUID()
-      : `d-${Date.now()}-${Math.random().toString(36).slice(2)}`;
   const row: DeckSnapshotRecord = {
     ...input,
-    id,
+    id: newRowId("d"),
     createdAt: new Date().toISOString(),
   };
-  await new Promise<void>((resolve, reject) => {
-    openDb()
-      .then((db) => {
-        const tx = db.transaction("deckSnapshots", "readwrite");
-        tx.objectStore("deckSnapshots").put(row);
-        tx.oncomplete = () => resolve();
-        tx.onerror = () => reject(tx.error);
-      })
-      .catch(reject);
+  await withStore("deckSnapshots", "readwrite", (store) => {
+    store.put(row);
   });
   dispatchLedgerChanged();
-  return id;
+  return row.id;
 }
 
-export async function listDeckSnapshots(): Promise<DeckSnapshotRecord[]> {
-  if (!hasIndexedDb()) return [];
-  const db = await openDb();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction("deckSnapshots", "readonly");
-    const req = tx.objectStore("deckSnapshots").getAll();
-    req.onsuccess = () => {
-      const rows = (req.result as DeckSnapshotRecord[]) ?? [];
-      rows.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
-      resolve(rows);
-    };
-    req.onerror = () => reject(req.error);
-  });
+export function listDeckSnapshots(): Promise<DeckSnapshotRecord[]> {
+  return listAllSorted<DeckSnapshotRecord>("deckSnapshots", "createdAt");
 }
 
 export async function putStudyRun(row: StudyRunRecord): Promise<void> {
   if (!hasIndexedDb()) return;
-  await new Promise<void>((resolve, reject) => {
-    openDb()
-      .then((db) => {
-        const tx = db.transaction("studyRuns", "readwrite");
-        tx.objectStore("studyRuns").put(row);
-        tx.oncomplete = () => resolve();
-        tx.onerror = () => reject(tx.error);
-      })
-      .catch(reject);
+  await withStore("studyRuns", "readwrite", (store) => {
+    store.put(row);
   });
   dispatchLedgerChanged();
 }
 
-export async function listStudyRuns(): Promise<StudyRunRecord[]> {
-  if (!hasIndexedDb()) return [];
-  const db = await openDb();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction("studyRuns", "readonly");
-    const req = tx.objectStore("studyRuns").getAll();
-    req.onsuccess = () => {
-      const rows = (req.result as StudyRunRecord[]) ?? [];
-      rows.sort((a, b) => b.startedAt.localeCompare(a.startedAt));
-      resolve(rows);
-    };
-    req.onerror = () => reject(req.error);
-  });
-}
-
-function readProgressMap(): ProgressMap {
-  if (typeof window === "undefined") return {};
-  try {
-    const raw = window.localStorage.getItem(PROGRESS_STORAGE_KEY);
-    if (!raw) return {};
-    const parsed = JSON.parse(raw) as ProgressMap;
-    return parsed && typeof parsed === "object" ? parsed : {};
-  } catch {
-    return {};
-  }
-}
-
-function readLastTopicId(): string | null {
-  if (typeof window === "undefined") return null;
-  return window.localStorage.getItem(LAST_TOPIC_STORAGE_KEY);
+export function listStudyRuns(): Promise<StudyRunRecord[]> {
+  return listAllSorted<StudyRunRecord>("studyRuns", "startedAt");
 }
 
 export async function buildLedgerExport(): Promise<LedgerExportV1> {

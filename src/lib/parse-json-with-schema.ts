@@ -1,18 +1,16 @@
 import type { z } from "zod";
 
-export type ParseJsonWithSchemaFailure =
+type Failure =
   | { ok: false; error: "invalid_json" }
   | { ok: false; error: "schema"; issues: z.ZodIssue[] };
 
-export type ParseJsonWithSchemaResult<T> =
-  | { ok: true; data: T }
-  | ParseJsonWithSchemaFailure;
+type Result<T> = { ok: true; data: T } | Failure;
 
 /** Parse text as JSON then validate with Zod (no Gemini). */
 export function parseJsonWithSchema<T>(
   text: string,
   schema: z.ZodType<T>,
-): ParseJsonWithSchemaResult<T> {
+): Result<T> {
   let raw: unknown;
   try {
     raw = JSON.parse(text);

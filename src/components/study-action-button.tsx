@@ -16,7 +16,6 @@ type Props = {
   action: StudyAction;
   href: string;
   variant?: "primary" | "ghost";
-  /** Stretch to container width (e.g. topic toolkit grid). */
   fullWidth?: boolean;
 };
 

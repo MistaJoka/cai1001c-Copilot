@@ -33,12 +33,6 @@ function pairsCanonical(
   return rights.length === expected.length && uniqueRights.size === expected.length;
 }
 
-/**
- * Click-to-match (keyboard-accessible buttons). Brilliant-style tactile pairing without cloning another product’s UX.
- *
- * TODO: Optional drag-lines between paired nodes via dnd-kit for advanced lessons.
- * TODO(Gemini): scaffold incorrect pair rationale when learner checks wrong answers.
- */
 export function MatchPairs({ step, onGateChange, onResult }: Props) {
   const [leftOrder, setLeftOrder] = useState<string[]>(() =>
     [...step.left.map((l) => l.id)].sort(),

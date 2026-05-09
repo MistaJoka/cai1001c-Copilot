@@ -5,7 +5,6 @@ import { useSearchParams } from "next/navigation";
 import { courseTopics } from "@/data/courseTopics";
 import { PageHeader } from "@/components/page-header";
 import { ResponsePanel } from "@/components/response-panel";
-import { MarkdownContent } from "@/components/markdown-content";
 import { buildArtifact } from "@/lib/api-client";
 import { markActionComplete, setLastStudiedTopic } from "@/lib/local-progress";
 
@@ -126,10 +125,9 @@ function ArtifactsInner() {
         <ResponsePanel
           loading={loading}
           error={error}
+          markdown={out}
           emptyMessage="Artifact preview shows here."
-        >
-          {out ? <MarkdownContent content={out} /> : null}
-        </ResponsePanel>
+        />
       </div>
     </>
   );

@@ -9,11 +9,6 @@ type Props = {
   onGateChange?: (allowed: boolean) => void;
 };
 
-/**
- * Prediction box + gated reveal — encourages generation before absorbing the answer.
- *
- * TODO(Gemini): optionally compare learner typing to canonical ideas (soft scoring, Markdown).
- */
 export function PredictReveal({ step, onGateChange }: Props) {
   const [prediction, setPrediction] = useState("");
   const [open, setOpen] = useState(false);

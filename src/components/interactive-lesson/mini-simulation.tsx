@@ -10,11 +10,6 @@ type Props = {
   onResult?: (correct: boolean) => void;
 };
 
-/**
- * Discrete choice sandbox — reinforces tradeoffs via brief outcome cues.
- *
- * TODO(Gemini): branch narrative copy per choice (validated JSON snippets).
- */
 export function MiniSimulation({ step, onGateChange, onResult }: Props) {
   const [pick, setPick] = useState<string | null>(null);
 
@@ -95,22 +90,20 @@ export function MiniSimulation({ step, onGateChange, onResult }: Props) {
         })}
       </div>
 
-      {/* TODO(Gemini): rich outcome snippets per choice */}
     </div>
   );
 }
 
-/** Static outcome microcopy keeps MVP deterministic (no Gemini yet). */
 const outcomeCopy = {
-  recommended(_step: MiniSimulationStep) {
-    switch (_step.recommendedChoiceId) {
+  recommended(step: MiniSimulationStep) {
+    switch (step.recommendedChoiceId) {
       case "c2":
         return "Linking misses to explanations tightens retrieval — strongest fix-up loop.";
       default:
         return "Solid pick — aligns with spaced practice loops.";
     }
   },
-  alt(_lesson: MiniSimulationStep, choiceId: string) {
+  alt(_step: MiniSimulationStep, choiceId: string) {
     if (choiceId === "c1") return "Guess-only practice rarely moves long-term retention.";
     if (choiceId === "c3")
       return "Letter-chasing fades fast under novel question stems.";

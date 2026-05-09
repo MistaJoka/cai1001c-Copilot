@@ -1,31 +1,24 @@
 import type { ConfidenceLevel, ProgressMap, StudyAction, StudyProgress } from "@/types";
+import {
+  GAPCLOSER_PROGRESS_EVENT,
+  LAST_TOPIC_STORAGE_KEY,
+  PROGRESS_STORAGE_KEY,
+  canUseStorage,
+  dispatchProgressChanged,
+  readLastTopicId,
+  readProgressMap,
+} from "@/lib/storage-keys";
 
-const STORAGE_KEY = "gapcloser-progress-v1";
-const LAST_TOPIC_KEY = "gapcloser-last-topic-v1";
-
-/** Fired on same-tab progress writes; `storage` event covers other tabs. */
-export const GAPCLOSER_PROGRESS_EVENT = "gapcloser-progress-changed";
-
-function canUseStorage(): boolean {
-  return typeof window !== "undefined" && typeof localStorage !== "undefined";
-}
+export { GAPCLOSER_PROGRESS_EVENT };
 
 export function getProgress(): ProgressMap {
-  if (!canUseStorage()) return {};
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return {};
-    const parsed = JSON.parse(raw) as ProgressMap;
-    return parsed && typeof parsed === "object" ? parsed : {};
-  } catch {
-    return {};
-  }
+  return readProgressMap();
 }
 
 function writeProgress(map: ProgressMap) {
   if (!canUseStorage()) return;
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(map));
-  window.dispatchEvent(new Event(GAPCLOSER_PROGRESS_EVENT));
+  localStorage.setItem(PROGRESS_STORAGE_KEY, JSON.stringify(map));
+  dispatchProgressChanged();
 }
 
 export function getTopicProgress(topicId: string): StudyProgress | undefined {
@@ -54,31 +47,19 @@ export function saveTopicProgress(
 
 export function markActionComplete(topicId: string, action: StudyAction) {
   if (!canUseStorage()) return;
-  const map = getProgress();
-  const prev = map[topicId];
-  const existing = prev?.completedActions ?? [];
-  if (existing.includes(action)) {
-    saveTopicProgress(topicId, {
-      ...prev,
-      completedActions: existing,
-    });
-    return;
-  }
-  saveTopicProgress(topicId, {
-    ...prev,
-    completedActions: [...existing, action],
-  });
+  const existing = getProgress()[topicId]?.completedActions ?? [];
+  if (existing.includes(action)) return;
+  saveTopicProgress(topicId, { completedActions: [...existing, action] });
 }
 
 export function setLastStudiedTopic(topicId: string) {
   if (!canUseStorage()) return;
-  localStorage.setItem(LAST_TOPIC_KEY, topicId);
-  window.dispatchEvent(new Event(GAPCLOSER_PROGRESS_EVENT));
+  localStorage.setItem(LAST_TOPIC_STORAGE_KEY, topicId);
+  dispatchProgressChanged();
 }
 
 export function getLastStudiedTopic(): string | null {
-  if (!canUseStorage()) return null;
-  return localStorage.getItem(LAST_TOPIC_KEY);
+  return readLastTopicId();
 }
 
 export function setTopicConfidence(topicId: string, confidence: ConfidenceLevel) {

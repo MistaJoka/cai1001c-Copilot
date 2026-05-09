@@ -49,8 +49,19 @@ function StudyBuddyInner() {
   useEffect(() => {
     const t = search.get("topic");
     const a = search.get("action");
+    const hint = search.get("hint");
     if (t) setTopicId(t);
-    if (a) setAction(a);
+    if (hint === "example") {
+      setAction("explain");
+      setMessage("Give me a concrete real-world example for this topic.");
+    } else if (hint === "summarize") {
+      setAction("explain");
+      setMessage(
+        "Summarize the core ideas of this topic in clear bullet points.",
+      );
+    } else if (a) {
+      setAction(a);
+    }
   }, [search]);
 
   const send = useCallback(async () => {

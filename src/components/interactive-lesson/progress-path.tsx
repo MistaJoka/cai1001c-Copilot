@@ -8,9 +8,6 @@ type Props = {
   ids: string[];
 };
 
-/**
- * Lightweight progress visualization — avoids chart libs; mobile-safe.
- */
 export function ProgressPath({ total, currentIndex, ids }: Props) {
   const pct =
     total <= 1 ? 100 : Math.min(100, Math.round((currentIndex / (total - 1)) * 100));

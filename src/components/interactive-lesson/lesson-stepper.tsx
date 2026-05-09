@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 type Props = {
   stepIndex: number;
   totalSteps: number;
-  /** Whether “Next” / “Finish” is allowed right now */
+  /** Whether "Next" / "Finish" is allowed right now */
   canAdvance: boolean;
   onBack: () => void;
   onNext: () => void;
@@ -14,9 +14,6 @@ type Props = {
   finishLabel?: string;
 };
 
-/**
- * Lightweight chrome under the rendered step — gestures stay in widgets above.
- */
 export function LessonStepper({
   stepIndex,
   totalSteps,
